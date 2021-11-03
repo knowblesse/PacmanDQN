@@ -522,7 +522,7 @@ def readCommand(argv):
     parser.add_option('-l', '--layout', dest='layout',
                       help=default(
                           'the LAYOUT_FILE from which to load the map layout'),
-                      metavar='LAYOUT_FILE', default='mediumClassic')
+                      metavar='LAYOUT_FILE', default='AI')###################################3
     parser.add_option('-p', '--pacman', dest='pacman',
                       help=default(
                           'the agent TYPE in the pacmanAgents module to use'),
@@ -534,7 +534,7 @@ def readCommand(argv):
     parser.add_option('-g', '--ghosts', dest='ghost',
                       help=default(
                           'the ghost agent TYPE in the ghostAgents module to use'),
-                      metavar='TYPE', default='RandomGhost')
+                      metavar='TYPE', default='PredatorGhost')
     parser.add_option('-k', '--numghosts', type='int', dest='numGhosts',
                       help=default('The maximum number of ghosts to use'), default=4)
     parser.add_option('-z', '--zoom', type='float', dest='zoom',
