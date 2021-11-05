@@ -397,6 +397,20 @@ class PacmanRules:
                 state.data.agentStates[index].scaredTimer = SCARED_TIME
     consume = staticmethod(consume)
 
+class ModifiedPacmanRules(PacmanRules):
+    def consume(position, state):
+        x, y = position
+        # Eat food
+        if state.data.food[x][y]:
+            state.data.scoreChange += 10
+            state.data.food = state.data.food.copy()
+            state.data.food[x][y] = False
+            state.data._foodEaten = position
+            # TODO: cache numFood?
+            numFood = state.getNumFood()
+            if numFood == 0 and not state.data._lose:
+                state.data.scoreChange += 500
+                state.data._win = True
 
 class GhostRules:
     """
