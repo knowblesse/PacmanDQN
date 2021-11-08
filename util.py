@@ -216,7 +216,53 @@ def manhattanDistance(xy1, xy2):
     "Returns the Manhattan distance between points xy1 and xy2"
     return abs(xy1[0] - xy2[0]) + abs(xy1[1] - xy2[1])
 
-def
+def canSee(p1, p2, wall):
+    wall = np.zeros((100,100))
+    isAligned = False
+    if isAligned:
+        print('aligned')
+        #TODO
+    else:
+        if p1[0] < p2[0]:# make pos1 to always located at the left of the pos2
+            pos1 = p1
+            pos2 = p2
+        else:
+            pos1 = p2
+            pos2 = p1
+        # check whether y direction goes up
+        xline = pos1[0]
+        if pos1[1] < pos2[1]: # y goes up
+            for yline in range(pos1[1], pos2[1]+1):
+                while xline <= pos2[0]:
+                    if not((xline == pos1[0]) and (yline == pos1[1])) and not((xline == pos2[0]) and (yline == pos2[1])):
+                        print(f'({xline}, {yline}) checked')
+                        if wall[xline][yline] == 1:  # has wall
+                            return False
+
+                    viewLine = ((pos2[1]-pos1[1]) / (pos2[0]-pos1[0]) * (xline + 0.5 - pos1[0]) + pos1[1] )
+                    if viewLine < (yline + 0.5):
+                        xline += 1
+                    elif viewLine == (yline + 0.5):
+                        xline += 1
+                        break
+                    else:
+                        break
+        else:
+            for yline in range(pos1[1], pos2[1]-1, -1):
+                while xline <= pos2[0]:
+                    if not((xline == pos1[0]) and (yline == pos1[1])) and not((xline == pos2[0]) and (yline == pos2[1])):
+                        print(f'({xline}, {yline}) checked')
+                        if wall[xline][yline] == 1:  # has wall
+                            return False
+                    viewLine = ((pos2[1] - pos1[1]) / (pos2[0] - pos1[0]) * (xline + 0.5 - pos1[0]) + pos1[1])
+                    if viewLine > (yline - 0.5):
+                        xline += 1
+                    elif viewLine == (yline - 0.5):
+                        xline += 1
+                        break
+                    else:
+                        break
+
 
 """
   Data structures and functions useful for various course projects
