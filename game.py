@@ -49,6 +49,12 @@ class Agent:
         """
         raiseNotDefined()
 
+    def initialize(self):
+        """
+        This function is called when a new game starts. The state of the agent (ex. isChase) is initialized.
+        """
+        raiseNotDefined()
+
 
 class Directions:
     NORTH = 'North'
@@ -521,7 +527,6 @@ class GameStateData:
         Creates an initial game state from a layout array (see layout.py).
         """
         self.food = layout.food.copy()
-        #self.capsules = []
         self.capsules = layout.capsules[:]
         self.layout = layout
         self.score = 0
