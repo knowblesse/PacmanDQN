@@ -41,53 +41,47 @@ Default agent is KeyboardAgent were it receives user input for movement selectio
 
 See *pacmanDQN_Agents.py* for self-behaving agent example.
 
-###Directions
+### Configuration
 
-###Configuration
+Configuration holds the agent's coordinate and moving direction. This value can be obstained by two getter functions.
 
-Get agents' coordinate from self.pos as (x, y) and travelling directions from self.direction
+* getPosition()
+* getDirection()
 
-* getPosition(self):
+### AgentState
 
-* getDirection(self):
+Hold the state of an agent (configuration)
 
-###AgentState
+* getPosition: Get agent position from Configuration
+* getDirection: Get agent travelling direction from Configuration
 
-Hold the state of an agent (configuration, speed, etc)
+### Grid
 
-* getPosition(self): Get agent position from Configuration
+A 2D nested array object. Return positions of Pacman map as [x][y]. x is horizontal and y is vertical.
 
-* getDirection(self): Get agent travelling direction from Configuration
-
-###Grid
-
-Return positions of Pacman map as [x][y]. x horizontal and y vertical.
-
-###Actions
-
-Manipulate move actions
-
-Define moving directions of agents as tuple
-
-* getPossibleActions(config, walls): Get agents' position and wall position. Return every possible position of agent
-
-* getLegalNeighbors(position, walls): Get 
-
-###GameStateData
+### GameStateData
 
 Get new state data from previous event. 
 
+### Game
 
+Manage all aspects of game play
+
+* run : Start the main loop of game. Initialize the environment, check time, solicit action form agent, and result of the game.
 
 ### Layout
 
-Layout file is defined in the *./layouts/* and has the **.lay** file extension.
+Layout file is a plane text file located in in the *./layouts/*. All layout file should have the **.lay** file extension. Following text is interpreted to corresponding component of the environment, and other characters are converted into an empty space. For the visual convention, we used underbar for the empty space. 
 
-DETAIL @SY
+* **.** : reward
+* **%** : wall
+* **G** : ghost
+* **P** : pacman
+* **_** : empty
 
 ### Graphics
 
-DETAIL @SY
+Define graphic components of the environment
 
 
 ## Citation
