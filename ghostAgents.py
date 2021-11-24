@@ -66,17 +66,19 @@ class PredatorGhost(GhostAgent):
         # Read variables from state
         ghostState = state.getGhostState(self.index)
         legalActions = state.getLegalActions(self.index)
-        pos = state.getGhostPosition(self.index)
+        ghostPosition = state.getGhostPosition(self.index)
         speed = 0.8
 
         actionVectors = [Actions.directionToVector(a, speed) for a in legalActions]
-        newPositions = [(pos[0] + a[0], pos[1] + a[1]) for a in actionVectors] # test all possible next Positions
+        newPositions = [(ghostPosition[0] + a[0], ghostPosition[1] + a[1]) for a in actionVectors] # test all ghostPositionsible next Positions
+
         pacmanPosition = state.getPacmanPosition()
         startPosition = ghostState.start.getPosition()
 
         # Check the distances
         distancesToPacman = [manhattanDistance(pos, pacmanPosition) for pos in newPositions]
         distancesFromStart = [manhattanDistance(pos, startPosition) for pos in newPositions]
+
         # Check if there is a wall between pacman and ghost
         walls = state.getWalls()
         bestActionIndex = np.argmin(distancesFromStart)
@@ -91,27 +93,30 @@ class PredatorGhost(GhostAgent):
             else:
                 bestActionIndex = np.random.choice(np.where(distancesToPacman == np.min(distancesToPacman))[0])
             self.chaseTime += 1
-        else: #not chasing, decide whether to follow or not
-            if min(distancesToPacman) < self.initChaseDistance:# start chase
-                self.roamTime = 0
-                if int(pos[0]) == pacmanPosition[0]:
-                    for j in range(int(min(pos[1], pacmanPosition[1])), int(max(pos[1], pacmanPosition[1]))):
+        else: #not chasing, decide whether to follow or not;
+            isPacmanClose = False
+            wallFound = False
+            if min(distancesToPacman) < self.initChaseDistance:# pacman is in range
+                isPacmanClose = True
+                if int(ghostPosition[0]) == pacmanPosition[0]:
+                    for j in range(int(min(ghostPosition[1], pacmanPosition[1]))+1, int(max(ghostPosition[1], pacmanPosition[1]))):
                         if walls[pacmanPosition[0]][j] == True:
                             print("wall")
+                            wallFound = True
                             break
-                        bestActionIndex = np.random.choice(np.where(distancesToPacman == np.min(distancesToPacman))[0])
-                        self.isChase = True
-                        self.isRoam = False
-                        print(f'Ghost{self.index} is now on chase!')
-                elif int(pos[1]) == pacmanPosition[1]:
-                    for k in range(int(min(pos[0], pacmanPosition[0])), int(max(pos[0], pacmanPosition[0]))):
-                        if walls[k][pacmanPosition[1]] == True:
+                elif int(ghostPosition[1]) == pacmanPosition[1]:
+                    for j in range(int(min(ghostPosition[0], pacmanPosition[0]))+1, int(max(ghostPosition[0], pacmanPosition[0]))):
+                        if walls[j][pacmanPosition[1]] == True:
                             print("wall")
+                            wallFound = True
                             break
-                        bestActionIndex = np.random.choice(np.where(distancesToPacman == np.min(distancesToPacman))[0])
-                        self.isChase = True
-                        self.isRoam = False
-                        print(f'Ghost{self.index} is now on chase!')
+
+            if isPacmanClose and (not wallFound):
+                bestActionIndex = np.random.choice(np.where(distancesToPacman == np.min(distancesToPacman))[0])
+                self.isChase = True
+                self.isRoam = False
+                print(f'Ghost{self.index} is now on chase!')
+
             else: # if not in chase, stay closer to the start position
                 if self.isRoam:
                     dist = util.Counter()
@@ -124,7 +129,7 @@ class PredatorGhost(GhostAgent):
                     return dist
 
                 bestActionIndex = np.argmin(distancesFromStart)
-                if pos == startPosition:
+                if ghostPosition == startPosition:
                     self.isRoam = True
                     self.roamTime = 0
 
