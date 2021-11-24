@@ -14,8 +14,32 @@
 
 from game import Agent
 from game import Directions
+import util
 import random
 
+class RandomAgent(Agent):
+    """
+    Random movement Agent
+    """
+    def __init__(self, index=0):
+        self.index = index
+
+    def initialize(self):
+        pass
+
+    def getAction(self, state):
+        dist = self.getDistribution(state)
+        if len(dist) == 0:
+            return Directions.STOP
+        else:
+            return util.chooseFromDistribution(dist)
+
+    def getDistribution(self, state):
+        dist = util.Counter()
+        for a in state.getLegalActions(self.index):
+            dist[a] = 1.0
+        dist.normalize()
+        return dist
 
 class KeyboardAgent(Agent):
     """
