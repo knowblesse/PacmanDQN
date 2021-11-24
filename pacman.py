@@ -61,7 +61,7 @@ import ghostAgents
 
 class GameState:
     """
-    A GameState specifies the full game state, including the food, capsules,
+    A GameState specifies the full game state, including the food,
     agent configurations and score changes.
 
     GameStates are used by the Game object to capture the actual state of the game and
@@ -411,8 +411,6 @@ class GhostRules:
 
         ghostState = state.data.agentStates[ghostIndex]
         speed = GhostRules.GHOST_SPEED
-        if ghostState.scaredTimer > 0:
-            speed /= 2.0
         vector = Actions.directionToVector(action, speed)
         ghostState.configuration = ghostState.configuration.generateSuccessor(
             vector)
