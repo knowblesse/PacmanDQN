@@ -224,10 +224,12 @@ def detectWall(p1, p2, wall):
         if p1[0] == p2[0]:
             for j in range(int(min(p1[1], p2[1])), int(max(p1[1], p2[1]))):
                 if wall[p1[0]][j] == True:
+                    print("wall")
                     return False
         elif(p1[1] == p2[1]):
             for k in range(int(min(p1[0], p2[0])), int(max(p1[0], p2[0]))):
                 if wall[k][p1[1]] == True:
+                    print("wall")
                     return False
 
     else: # if not aligned, use complex method
