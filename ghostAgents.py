@@ -1,4 +1,4 @@
-# ghostAgents1.py
+# ghostAgents.py
 # --------------
 # Licensing Information:  You are free to use or extend these projects for
 # educational purposes provided that (1) you do not distribute or publish
@@ -234,9 +234,6 @@ class PredatorGhost3(GhostAgent):
         # Check the distances
         distancesToPacman = [manhattanDistance(pos, pacmanPosition) for pos in newPositions]
         distancesFromStart = [manhattanDistance(pos, startPosition) for pos in newPositions]
-        # Check if there is a wall between pacman and ghost
-        walls = state.getWalls()
-        bestActionIndex = np.argmin(distancesFromStart)
 
         if self.isChase: # if in chase, follow
             if self.chaseTime > self.maxChaseTime:
@@ -244,29 +241,16 @@ class PredatorGhost3(GhostAgent):
                 self.isRoam = True
                 bestActionIndex = np.argmin(distancesFromStart)
                 self.chaseTime = 0
-                print(f'Ghost{self.index} stops the chase!')
             else:
                 bestActionIndex = np.random.choice(np.where(distancesToPacman == np.min(distancesToPacman))[0])
-            self.chaseTime += 1
+                self.chaseTime += 1
         else: #not chasing, decide whether to follow or not
-            self.start_time = time.time()
-
-            if min(distancesToPacman) < self.initChaseDistance:# start chase
-                if (util.detectWall(ghostPosition, pacmanPosition, walls) == True):
-                    print("ssibal")
-                else:
-                    self.end_time = time.time()
-                    time_delay = self.end_time - self.start_time
-                    print(time_delay)
-                    self.time_list.append(time_delay)
-                    if (len(self.time_list) >= 5):
-                        time_list2 = np.array(self.time_list)
-                        print("average time_delay:", time_list2.mean())
-                    self.isChase = True
-                    self.isRoam = False
-                    print(f'Ghost{self.index} is now on chase!')
-            else: # if not in chase, stay closer to the start position
-                if self.isRoam:
+            if (min(distancesToPacman) < self.initChaseDistance) and (util.isVisible(ghostPosition, pacmanPosition, state.getWalls())):
+                self.isChase = True
+                self.isRoam = False
+                bestActionIndex = np.random.choice(np.where(distancesToPacman == np.min(distancesToPacman))[0])
+            else: # Not in chase.
+                if self.isRoam: # if roam. show random action
                     dist = util.Counter()
                     for a in state.getLegalActions(self.index):
                         dist[a] = 1.0
@@ -275,11 +259,11 @@ class PredatorGhost3(GhostAgent):
                     if self.roamTime == self.maxRoamTime:
                         self.isRoam = False
                     return dist
-
-                bestActionIndex = np.argmin(distancesFromStart)
-                if ghostPosition == startPosition:
-                    self.isRoam = True
-                    self.roamTime = 0
+                else: # if not roam, head back to the starting point
+                    bestActionIndex = np.argmin(distancesFromStart)
+                    if ghostPosition == startPosition:
+                        self.isRoam = True
+                        self.roamTime = 0
 
     # Construct distribution
         dist = util.Counter()
