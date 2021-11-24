@@ -24,7 +24,7 @@ code to run a game.  This file is divided into three sections:
           project.  There is also some code in game.py that you should
           understand.
 
-  (ii)  The hidden secrets of pacman:
+  (ii)  Pacman Game Structure:
           This section contains all of the logic code that the pacman
           environment uses to decide who can move where, who dies when
           things collide, etc.  You shouldn't need to read this section
@@ -656,7 +656,7 @@ def runGames(layout, pacman, ghosts, display, numGames, record, numTraining=0, c
     for i in range(numGames):
         beQuiet = i < numTraining
         if beQuiet:
-                # Suppress output and graphics
+            # Suppress output and graphics
             import textDisplay
             gameDisplay = textDisplay.NullGraphics()
             rules.quiet = True
