@@ -24,7 +24,7 @@ code to run a game.  This file is divided into three sections:
           project.  There is also some code in game.py that you should
           understand.
 
-  (ii)  The hidden secrets of pacman:
+  (ii)  Pacman Game Structure:
           This section contains all of the logic code that the pacman
           environment uses to decide who can move where, who dies when
           things collide, etc.  You shouldn't need to read this section
@@ -51,7 +51,7 @@ import time
 import random
 import os
 
-import pacmanDQN_Agents
+import pacmanAgents
 import ghostAgents
 
 ###################################################
@@ -61,7 +61,7 @@ import ghostAgents
 
 class GameState:
     """
-    A GameState specifies the full game state, including the food, capsules,
+    A GameState specifies the full game state, including the food,
     agent configurations and score changes.
 
     GameStates are used by the Game object to capture the actual state of the game and
@@ -122,8 +122,6 @@ class GameState:
         # Time passes
         if agentIndex == 0:
             state.data.scoreChange += -TIME_PENALTY  # Penalty for waiting around
-        else:
-            GhostRules.decrementTimer(state.data.agentStates[agentIndex])
 
         # Resolve multi-agent effects
         GhostRules.checkDeath(state, agentIndex)
@@ -177,12 +175,6 @@ class GameState:
 
     def getScore(self):
         return float(self.data.score)
-
-    def getCapsules(self):
-        """
-        Returns a list of positions (x,y) of the remaining capsules.
-        """
-        return self.data.capsules
 
     def getNumFood(self):
         return self.data.food.count()
@@ -265,15 +257,12 @@ class GameState:
         self.data.initialize(layout, numGhostAgents)
 
 ############################################################################
-#                     THE HIDDEN SECRETS OF PACMAN                         #
-#                                                                          #
-# You shouldn't need to look through the code in this section of the file. #
+#                     PACMAN   GAME   STRUCTURE                            #
 ############################################################################
+# ClassicGameRules, PacmanRules, GhostRules
 
-SCARED_TIME = 40    # Moves ghosts are scared
 COLLISION_TOLERANCE = 0.7  # How close ghosts must be to Pacman to kill
 TIME_PENALTY = 1  # Number of points lost each round
-
 
 class ClassicGameRules:
     """
@@ -288,6 +277,8 @@ class ClassicGameRules:
         agents = [pacmanAgent] + ghostAgents[:layout.getNumGhosts()]
         initState = GameState()
         initState.initialize(layout, len(ghostAgents))
+        for i in agents:
+            i.initialize()
         game = Game(agents, display, self, catchExceptions=catchExceptions)
         game.state = initState
         self.initialState = initState.deepCopy()
@@ -388,29 +379,7 @@ class PacmanRules:
             if numFood == 0 and not state.data._lose:
                 state.data.scoreChange += 500
                 state.data._win = True
-        # Eat capsule
-        if(position in state.getCapsules()):
-            state.data.capsules.remove(position)
-            state.data._capsuleEaten = position
-            # Reset all ghosts' scared timers
-            for index in range(1, len(state.data.agentStates)):
-                state.data.agentStates[index].scaredTimer = SCARED_TIME
     consume = staticmethod(consume)
-
-class ModifiedPacmanRules(PacmanRules):
-    def consume(position, state):
-        x, y = position
-        # Eat food
-        if state.data.food[x][y]:
-            state.data.scoreChange += 10
-            state.data.food = state.data.food.copy()
-            state.data.food[x][y] = False
-            state.data._foodEaten = position
-            # TODO: cache numFood?
-            numFood = state.getNumFood()
-            if numFood == 0 and not state.data._lose:
-                state.data.scoreChange += 500
-                state.data._win = True
 
 class GhostRules:
     """
@@ -442,20 +411,10 @@ class GhostRules:
 
         ghostState = state.data.agentStates[ghostIndex]
         speed = GhostRules.GHOST_SPEED
-        if ghostState.scaredTimer > 0:
-            speed /= 2.0
         vector = Actions.directionToVector(action, speed)
         ghostState.configuration = ghostState.configuration.generateSuccessor(
             vector)
     applyAction = staticmethod(applyAction)
-
-    def decrementTimer(ghostState):
-        timer = ghostState.scaredTimer
-        if timer == 1:
-            ghostState.configuration.pos = nearestPoint(
-                ghostState.configuration.pos)
-        ghostState.scaredTimer = max(0, timer - 1)
-    decrementTimer = staticmethod(decrementTimer)
 
     def checkDeath(state, agentIndex):
         pacmanPosition = state.getPacmanPosition()
@@ -473,16 +432,9 @@ class GhostRules:
     checkDeath = staticmethod(checkDeath)
 
     def collide(state, ghostState, agentIndex):
-        if ghostState.scaredTimer > 0:
-            state.data.scoreChange += 200
-            GhostRules.placeGhost(state, ghostState)
-            ghostState.scaredTimer = 0
-            # Added for first-person
-            state.data._eaten[agentIndex] = True
-        else:
-            if not state.data._win:
-                state.data.scoreChange -= 500
-                state.data._lose = True
+        if not state.data._win:
+            state.data.scoreChange -= 500
+            state.data._lose = True
     collide = staticmethod(collide)
 
     def canKill(pacmanPosition, ghostPosition):
@@ -522,39 +474,37 @@ def readCommand(argv):
     """
     from optparse import OptionParser
     usageStr = """
-    USAGE:      python pacman.py <options>
-    EXAMPLES:   (1) python pacman.py
-                    - starts an interactive game
-                (2) python pacman.py --layout smallClassic --zoom 2
-                OR  python pacman.py -l smallClassic -z 2
-                    - starts an interactive game on a smaller board, zoomed in
+    USAGE:      python3 pacman.py <options>
+    EXAMPLES:   python3 pacman.py
+                    - starts an interactive game using RandomGhost and KeyboardAgent in AI_open layout.
+                python3 pacman.py -g PredatorGhost -l mediumGrid
+                    - start an interactive game using PredatorGhost in mediumGrid layout.
     """
     parser = OptionParser(usageStr)
 
-    parser.add_option('-n', '--numGames', dest='numGames', type='int',
-                      help=default('the number of GAMES to play'), metavar='GAMES', default=6000)
     parser.add_option('-l', '--layout', dest='layout',
                       help=default(
                           'the LAYOUT_FILE from which to load the map layout'),
-                      metavar='LAYOUT_FILE', default='AI')###################################3
+                      metavar='LAYOUT_FILE', default='AI_open')
     parser.add_option('-p', '--pacman', dest='pacman',
                       help=default(
                           'the agent TYPE in the pacmanAgents module to use'),
                       metavar='TYPE', default='KeyboardAgent')
+    parser.add_option('-g', '--ghosts', dest='ghost',
+                      help=default(
+                          'the ghost agent TYPE in the ghostAgents module to use'),
+                      metavar='TYPE', default='RandomGhost')
+    parser.add_option('-f', '--fixRandomSeed', action='store_true', dest='fixRandomSeed',
+                      help='Fixes the random seed to always play the same game', default=False)
+    # TODO : Clean unused parameter options
+    parser.add_option('-n', '--numGames', dest='numGames', type='int',
+                      help=default('the number of GAMES to play'), metavar='GAMES', default=6000)
     parser.add_option('-t', '--textGraphics', action='store_true', dest='textGraphics',
                       help='Display output as text only', default=False)
     parser.add_option('-q', '--quietTextGraphics', action='store_true', dest='quietGraphics',
                       help='Generate minimal output and no graphics', default=False)
-    parser.add_option('-g', '--ghosts', dest='ghost',
-                      help=default(
-                          'the ghost agent TYPE in the ghostAgents module to use'),
-                      metavar='TYPE', default='PredatorGhost')
-    parser.add_option('-k', '--numghosts', type='int', dest='numGhosts',
-                      help=default('The maximum number of ghosts to use'), default=4)
     parser.add_option('-z', '--zoom', type='float', dest='zoom',
                       help=default('Zoom the size of the graphics window'), default=1.0)
-    parser.add_option('-f', '--fixRandomSeed', action='store_true', dest='fixRandomSeed',
-                      help='Fixes the random seed to always play the same game', default=False)
     parser.add_option('-r', '--recordActions', action='store_true', dest='record',
                       help='Writes game histories to a file (named by the time they were played)', default=False)
     parser.add_option('--replay', dest='gameToReplay',
@@ -577,7 +527,7 @@ def readCommand(argv):
 
     # Fix the random seed
     if options.fixRandomSeed:
-        random.seed('cs188')
+        random.seed('knowblesse')
 
     # Choose a layout
     args['layout'] = layout.getLayout(options.layout)
@@ -609,7 +559,8 @@ def readCommand(argv):
 
     # Choose a ghost agent
     ghostType = loadAgent(options.ghost, noKeyboard)
-    args['ghosts'] = [ghostType(i + 1) for i in range(options.numGhosts)]
+
+    args['ghosts'] = [ghostType(i + 1) for i in range(args['layout'].numGhosts)]
 
     # Choose a display format
     if options.quietGraphics:
@@ -704,7 +655,7 @@ def runGames(layout, pacman, ghosts, display, numGames, record, numTraining=0, c
     for i in range(numGames):
         beQuiet = i < numTraining
         if beQuiet:
-                # Suppress output and graphics
+            # Suppress output and graphics
             import textDisplay
             gameDisplay = textDisplay.NullGraphics()
             rules.quiet = True

@@ -216,10 +216,22 @@ def manhattanDistance(xy1, xy2):
     "Returns the Manhattan distance between points xy1 and xy2"
     return abs(xy1[0] - xy2[0]) + abs(xy1[1] - xy2[1])
 
-def detectWall(p1, p2, wall):
+def isVisible(p1, p2, wall):
+    "Check whether two points (p1 and p2) is not blocked by walls"
+    p1 = [int(p1[0]), int(p1[1])]
+    p2 = [int(p2[0]), int(p2[1])]
+
     if (p1[0] == p2[0]) or (p1[1] == p2[1]): # check whether two agents are aligned
-        #TODO : If aligned, use previous wall detection method @Seyoung
-    else: # if not aligned, use complex method
+        if p1[0] == p2[0]:
+            for j in range(min(p1[1], p2[1]), max(p1[1], p2[1])):
+                if wall[p1[0]][j] == True:
+                    return False
+        elif(p1[1] == p2[1]):
+            for k in range(min(p1[0], p2[0]), max(p1[0], p2[0])):
+                if wall[k][p1[1]] == True:
+                    return False
+        return True
+    else: # if not aligned, use a complex method
         if p1[0] < p2[0]:# make pos1 to always located at the left of the pos2
             pos1 = p1
             pos2 = p2
@@ -233,7 +245,6 @@ def detectWall(p1, p2, wall):
             for yline in range(pos1[1], pos2[1]+1):
                 while xline <= pos2[0]:
                     if ([xline, yline] != pos1) and ([xline, yline] != pos2):
-                        print(f'({xline}, {yline}) checked')
                         if wall[xline][yline] == True:  # has wall
                             return False
                     viewLine = ((pos2[1]-pos1[1]) / (pos2[0]-pos1[0]) * (xline + 0.5 - pos1[0]) + pos1[1] )
@@ -248,7 +259,6 @@ def detectWall(p1, p2, wall):
             for yline in range(pos1[1], pos2[1]-1, -1):
                 while xline <= pos2[0]:
                     if ([xline, yline] != pos1) and ([xline, yline] != pos2):
-                        print(f'({xline}, {yline}) checked')
                         if wall[xline][yline] == True:  # has wall
                             return False
                     viewLine = ((pos2[1] - pos1[1]) / (pos2[0] - pos1[0]) * (xline + 0.5 - pos1[0]) + pos1[1])
@@ -259,6 +269,7 @@ def detectWall(p1, p2, wall):
                         break
                     else:
                         break
+        return True
 
 
 """

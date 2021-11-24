@@ -216,7 +216,6 @@ class PacmanGraphics:
         layout = self.layout
         self.drawWalls(layout.walls)
         self.food = self.drawFood(layout.food)
-        self.capsules = self.drawCapsules(layout.capsules)
         refresh()
 
     def drawAgentObjects(self, state):
@@ -260,8 +259,7 @@ class PacmanGraphics:
 
         if newState._foodEaten != None:
             self.removeFood(newState._foodEaten, self.food)
-        if newState._capsuleEaten != None:
-            self.removeCapsule(newState._capsuleEaten, self.capsules)
+
         self.infoPane.updateScore(newState.score)
         if 'ghostDistances' in dir(newState):
             self.infoPane.updateGhostDistances(newState.ghostDistances)
@@ -343,10 +341,7 @@ class PacmanGraphics:
         refresh()
 
     def getGhostColor(self, ghost, ghostIndex):
-        if ghost.scaredTimer > 0:
-            return SCARED_COLOR
-        else:
-            return GHOST_COLORS[ghostIndex]
+        return GHOST_COLORS[ghostIndex]
 
     def drawGhost(self, ghost, agentIndex):
         pos = self.getPosition(ghost)
@@ -419,10 +414,7 @@ class PacmanGraphics:
             move_by(ghostImagePart, delta)
         refresh()
 
-        if ghost.scaredTimer > 0:
-            color = SCARED_COLOR
-        else:
-            color = GHOST_COLORS[ghostIndex]
+        color = GHOST_COLORS[ghostIndex]
         edit(ghostImageParts[0], ('fill', color), ('outline', color))
         self.moveEyes(self.getPosition(ghost),
                       self.getDirection(ghost), ghostImageParts[-4:])
@@ -597,25 +589,9 @@ class PacmanGraphics:
                     imageRow.append(None)
         return foodImages
 
-    def drawCapsules(self, capsules):
-        capsuleImages = {}
-        for capsule in capsules:
-            (screen_x, screen_y) = self.to_screen(capsule)
-            dot = circle((screen_x, screen_y),
-                         CAPSULE_SIZE * self.gridSize,
-                         outlineColor=CAPSULE_COLOR,
-                         fillColor=CAPSULE_COLOR,
-                         width=1)
-            capsuleImages[capsule] = dot
-        return capsuleImages
-
     def removeFood(self, cell, foodImages):
         x, y = cell
         remove_from_screen(foodImages[x][y])
-
-    def removeCapsule(self, cell, capsuleImages):
-        x, y = cell
-        remove_from_screen(capsuleImages[(x, y)])
 
     def drawExpandedCells(self, cells):
         """

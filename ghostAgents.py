@@ -1,4 +1,4 @@
-# ghostAgents1.py
+# ghostAgents.py
 # --------------
 # Licensing Information:  You are free to use or extend these projects for
 # educational purposes provided that (1) you do not distribute or publish
@@ -19,7 +19,7 @@ import random
 from util import manhattanDistance
 import util
 import numpy as np
-
+import time
 
 class GhostAgent(Agent):
 
@@ -47,20 +47,33 @@ class RandomGhost(GhostAgent):
         dist.normalize()
         return dist
 
+    def initialize(self):
+        pass
 
 class PredatorGhost(GhostAgent):
-    "A ghost that prefers to rush Pacman, or flee when scared."
+    """
+    A ghost normally stays in the starting area.
+    It start the chase if the pacman is near the ghost and there are no walls blocking between two agents.
+    The ghost stop chasing after certain amount of time.
+    If the ghost stop chasing, ghost stays near the current area for a while, and return to the starting area.
+    """
 
     def __init__(self, index):
         self.index = index
         self.chaseTime = 0
         self.isChase = False
-        self.maxChaseTime = 50
+        self.maxChaseTime = 20
         self.bestActionProb = 0.8
         self.initChaseDistance = 5
         self.isRoam = True
         self.roamTime = 0
-        self.maxRoamTime = 50
+        self.maxRoamTime = 30
+
+    def initialize(self):
+        self.isChase = False
+        self.chaseTime = 0
+        self.isRoam = True
+        self.roamTime = 0
 
     def getDistribution(self, state):
         # Read variables from state
@@ -70,8 +83,7 @@ class PredatorGhost(GhostAgent):
         speed = 0.8
 
         actionVectors = [Actions.directionToVector(a, speed) for a in legalActions]
-        newPositions = [(ghostPosition[0] + a[0], ghostPosition[1] + a[1]) for a in actionVectors] # test all ghostPositionsible next Positions
-
+        newPositions = [(ghostPosition[0] + a[0], ghostPosition[1] + a[1]) for a in actionVectors] # test all possible next Positions
         pacmanPosition = state.getPacmanPosition()
         startPosition = ghostState.start.getPosition()
 
@@ -79,46 +91,22 @@ class PredatorGhost(GhostAgent):
         distancesToPacman = [manhattanDistance(pos, pacmanPosition) for pos in newPositions]
         distancesFromStart = [manhattanDistance(pos, startPosition) for pos in newPositions]
 
-        # Check if there is a wall between pacman and ghost
-        walls = state.getWalls()
-        bestActionIndex = np.argmin(distancesFromStart)
-
         if self.isChase: # if in chase, follow
             if self.chaseTime > self.maxChaseTime:
                 self.isChase = False
                 self.isRoam = True
                 bestActionIndex = np.argmin(distancesFromStart)
                 self.chaseTime = 0
-                print(f'Ghost{self.index} stops the chase!')
             else:
                 bestActionIndex = np.random.choice(np.where(distancesToPacman == np.min(distancesToPacman))[0])
-            self.chaseTime += 1
-        else: #not chasing, decide whether to follow or not;
-            isPacmanClose = False
-            wallFound = False
-            if min(distancesToPacman) < self.initChaseDistance:# pacman is in range
-                isPacmanClose = True
-                if int(ghostPosition[0]) == pacmanPosition[0]:
-                    for j in range(int(min(ghostPosition[1], pacmanPosition[1]))+1, int(max(ghostPosition[1], pacmanPosition[1]))):
-                        if walls[pacmanPosition[0]][j] == True:
-                            print("wall")
-                            wallFound = True
-                            break
-                elif int(ghostPosition[1]) == pacmanPosition[1]:
-                    for j in range(int(min(ghostPosition[0], pacmanPosition[0]))+1, int(max(ghostPosition[0], pacmanPosition[0]))):
-                        if walls[j][pacmanPosition[1]] == True:
-                            print("wall")
-                            wallFound = True
-                            break
-
-            if isPacmanClose and (not wallFound):
-                bestActionIndex = np.random.choice(np.where(distancesToPacman == np.min(distancesToPacman))[0])
+                self.chaseTime += 1
+        else: #not chasing, decide whether to follow or not
+            if (min(distancesToPacman) < self.initChaseDistance) and (util.isVisible(ghostPosition, pacmanPosition, state.getWalls())):
                 self.isChase = True
                 self.isRoam = False
-                print(f'Ghost{self.index} is now on chase!')
-
-            else: # if not in chase, stay closer to the start position
-                if self.isRoam:
+                bestActionIndex = np.random.choice(np.where(distancesToPacman == np.min(distancesToPacman))[0])
+            else: # Not in chase.
+                if self.isRoam: # if roam. show random action
                     dist = util.Counter()
                     for a in state.getLegalActions(self.index):
                         dist[a] = 1.0
@@ -127,11 +115,11 @@ class PredatorGhost(GhostAgent):
                     if self.roamTime == self.maxRoamTime:
                         self.isRoam = False
                     return dist
-
-                bestActionIndex = np.argmin(distancesFromStart)
-                if ghostPosition == startPosition:
-                    self.isRoam = True
-                    self.roamTime = 0
+                else: # if not roam, head back to the starting point
+                    bestActionIndex = np.argmin(distancesFromStart)
+                    if ghostPosition == startPosition:
+                        self.isRoam = True
+                        self.roamTime = 0
 
     # Construct distribution
         dist = util.Counter()

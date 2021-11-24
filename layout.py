@@ -31,7 +31,6 @@ class Layout:
         self.height = len(layoutText)
         self.walls = Grid(self.width, self.height, False)
         self.food = Grid(self.width, self.height, False)
-        self.capsules = []
         self.agentPositions = []
         self.numGhosts = 0
         self.processLayoutText(layoutText)
@@ -107,7 +106,6 @@ class Layout:
         represents a different type of object.
          % - Wall
          . - Food
-         o - Capsule
          G - Ghost
          P - Pacman
         Other characters are ignored.
@@ -125,8 +123,6 @@ class Layout:
             self.walls[x][y] = True
         elif layoutChar == '.':
             self.food[x][y] = True
-        elif layoutChar == 'o':
-            self.capsules.append((x, y))
         elif layoutChar == 'P':
             self.agentPositions.append((0, (x, y)))
         elif layoutChar in ['G']:

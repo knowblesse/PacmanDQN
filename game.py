@@ -49,6 +49,12 @@ class Agent:
         """
         raiseNotDefined()
 
+    def initialize(self):
+        """
+        This function is called when a new game starts. The state of the agent (ex. isChase) is initialized.
+        """
+        raiseNotDefined()
+
 
 class Directions:
     NORTH = 'North'
@@ -133,7 +139,6 @@ class AgentState:
         self.start = startConfiguration
         self.configuration = startConfiguration
         self.isPacman = isPacman
-        self.scaredTimer = 0
         self.numCarrying = 0
         self.numReturned = 0
 
@@ -146,15 +151,14 @@ class AgentState:
     def __eq__(self, other):
         if other == None:
             return False
-        return self.configuration == other.configuration and self.scaredTimer == other.scaredTimer
+        return self.configuration == other.configuration
 
     def __hash__(self):
-        return hash(hash(self.configuration) + 13 * hash(self.scaredTimer))
+        return hash(hash(self.configuration) + 13 )
 
     def copy(self):
         state = AgentState(self.start, self.isPacman)
         state.configuration = self.configuration
-        state.scaredTimer = self.scaredTimer
         state.numCarrying = self.numCarrying
         state.numReturned = self.numReturned
         return state
@@ -403,7 +407,6 @@ class GameStateData:
         """
         if prevState != None:
             self.food = prevState.food.shallowCopy()
-            self.capsules = prevState.capsules[:]
             self.agentStates = self.copyAgentStates(prevState.agentStates)
             self.layout = prevState.layout
             self._eaten = prevState._eaten
@@ -411,7 +414,6 @@ class GameStateData:
 
         self._foodEaten = None
         self._foodAdded = None
-        self._capsuleEaten = None
         self._agentMoved = None
         self._lose = False
         self._win = False
@@ -424,7 +426,6 @@ class GameStateData:
         state._agentMoved = self._agentMoved
         state._foodEaten = self._foodEaten
         state._foodAdded = self._foodAdded
-        state._capsuleEaten = self._capsuleEaten
         return state
 
     def copyAgentStates(self, agentStates):
@@ -444,8 +445,6 @@ class GameStateData:
             return False
         if not self.food == other.food:
             return False
-        if not self.capsules == other.capsules:
-            return False
         if not self.score == other.score:
             return False
         return True
@@ -460,7 +459,7 @@ class GameStateData:
             except TypeError(e):
                 print(e)
                 # hash(state)
-        return int((hash(tuple(self.agentStates)) + 13 * hash(self.food) + 113 * hash(tuple(self.capsules)) + 7 * hash(self.score)) % 1048575)
+        return int((hash(tuple(self.agentStates)) + 13 * hash(self.food)  + 7 * hash(self.score)) % 1048575)
 
     def __str__(self):
         width, height = self.layout.width, self.layout.height
@@ -483,9 +482,6 @@ class GameStateData:
                 map[x][y] = self._pacStr(agent_dir)
             else:
                 map[x][y] = self._ghostStr(agent_dir)
-
-        for x, y in self.capsules:
-            map[x][y] = 'o'
 
         return str(map) + ("\nScore: %d\n" % self.score)
 
@@ -521,8 +517,6 @@ class GameStateData:
         Creates an initial game state from a layout array (see layout.py).
         """
         self.food = layout.food.copy()
-        #self.capsules = []
-        self.capsules = layout.capsules[:]
         self.layout = layout
         self.score = 0
         self.scoreChange = 0
