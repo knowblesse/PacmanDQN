@@ -216,9 +216,19 @@ def manhattanDistance(xy1, xy2):
     "Returns the Manhattan distance between points xy1 and xy2"
     return abs(xy1[0] - xy2[0]) + abs(xy1[1] - xy2[1])
 
-def detectWall(p1, p2, wall):
+def detectWall(p1, p2, wall, state):
+    walls = state.getWalls()
     if (p1[0] == p2[0]) or (p1[1] == p2[1]): # check whether two agents are aligned
         #TODO : If aligned, use previous wall detection method @Seyoung
+        if p1[0] == p2[0]:
+            for j in range(int(min(p1[1], p2[1])), int(max(p1[1], p2[1]))):
+                if walls[p1[0]][j] == True:
+                    return False
+        elif(p1[1] == p2[1]):
+            for k in range(int(min(p1[0], p2[0])), int(max(p1[0], p2[0]))):
+                if walls[k][p1[1]] == True:
+                    return False
+
     else: # if not aligned, use complex method
         if p1[0] < p2[0]:# make pos1 to always located at the left of the pos2
             pos1 = p1
