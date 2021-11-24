@@ -51,7 +51,6 @@ import time
 import random
 import os
 
-import pacmanDQN_Agents
 import ghostAgents
 
 ###################################################
@@ -536,7 +535,7 @@ def readCommand(argv):
     parser.add_option('-l', '--layout', dest='layout',
                       help=default(
                           'the LAYOUT_FILE from which to load the map layout'),
-                      metavar='LAYOUT_FILE', default='AI')###################################3
+                      metavar='LAYOUT_FILE', default='AI_open')###################################3
     parser.add_option('-p', '--pacman', dest='pacman',
                       help=default(
                           'the agent TYPE in the pacmanAgents module to use'),
