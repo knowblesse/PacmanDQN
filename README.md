@@ -41,6 +41,44 @@ Default agent is KeyboardAgent were it receives user input for movement selectio
 
 See *pacmanDQN_Agents.py* for self-behaving agent example.
 
+###Directions
+
+###Configuration
+
+Get agents' coordinate from self.pos as (x, y) and travelling directions from self.direction
+
+* getPosition(self):
+
+* getDirection(self):
+
+###AgentState
+
+Hold the state of an agent (configuration, speed, etc)
+
+* getPosition(self): Get agent position from Configuration
+
+* getDirection(self): Get agent travelling direction from Configuration
+
+###Grid
+
+Return positions of Pacman map as [x][y]. x horizontal and y vertical.
+
+###Actions
+
+Manipulate move actions
+
+Define moving directions of agents as tuple
+
+* getPossibleActions(config, walls): Get agents' position and wall position. Return every possible position of agent
+
+* getLegalNeighbors(position, walls): Get 
+
+###GameStateData
+
+Get new state data from previous event. 
+
+
+
 ### Layout
 
 Layout file is defined in the *./layouts/* and has the **.lay** file extension.
