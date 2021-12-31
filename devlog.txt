@@ -1,0 +1,5 @@
+# 21DEC30
+score
+- time limit (by starvation)
+    -> punish prolonged stay
+- survival time is score
