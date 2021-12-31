@@ -504,13 +504,6 @@ class GameStateData:
 
     def _ghostStr(self, dir):
         return 'G'
-        if dir == Directions.NORTH:
-            return 'M'
-        if dir == Directions.SOUTH:
-            return 'W'
-        if dir == Directions.WEST:
-            return '3'
-        return 'E'
 
     def initialize(self, layout, numGhostAgents):
         """

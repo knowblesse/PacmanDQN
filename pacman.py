@@ -81,12 +81,11 @@ class GameState:
     # static variable keeps track of which states have had getLegalActions
     # called
     explored = set()
-
+    @staticmethod
     def getAndResetExplored():
         tmp = GameState.explored.copy()
         GameState.explored = set()
         return tmp
-    getAndResetExplored = staticmethod(getAndResetExplored)
 
     def getLegalActions(self, agentIndex=0):
         """
@@ -178,7 +177,7 @@ class GameState:
 
     def getNumFood(self):
         return self.data.food.count()
-
+     
     def getFood(self):
         """
         Returns a Grid of boolean food indicator variables.
@@ -335,14 +334,15 @@ class PacmanRules:
     the classic game rules.
     """
     PACMAN_SPEED = 1
-
+    
+    @staticmethod
     def getLegalActions(state):
         """
         Returns a list of possible actions.
         """
         return Actions.getPossibleActions(state.getPacmanState().configuration, state.data.layout.walls)
-    getLegalActions = staticmethod(getLegalActions)
 
+    @staticmethod
     def applyAction(state, action):
         """
         Edits the state to reflect the results of the action.
@@ -364,8 +364,8 @@ class PacmanRules:
         if manhattanDistance(nearest, next) <= 0.5:
             # Remove food
             PacmanRules.consume(nearest, state)
-    applyAction = staticmethod(applyAction)
 
+    @staticmethod
     def consume(position, state):
         x, y = position
         # Eat food
@@ -379,7 +379,6 @@ class PacmanRules:
             if numFood == 0 and not state.data._lose:
                 state.data.scoreChange += 500
                 state.data._win = True
-    consume = staticmethod(consume)
 
 class GhostRules:
     """
@@ -387,6 +386,7 @@ class GhostRules:
     """
     GHOST_SPEED = 1.0
 
+    @staticmethod
     def getLegalActions(state, ghostIndex):
         """
         Ghosts cannot stop, and cannot turn around unless they
@@ -401,8 +401,8 @@ class GhostRules:
         if reverse in possibleActions and len(possibleActions) > 1:
             possibleActions.remove(reverse)
         return possibleActions
-    getLegalActions = staticmethod(getLegalActions)
 
+    @staticmethod
     def applyAction(state, action, ghostIndex):
 
         legal = GhostRules.getLegalActions(state, ghostIndex)
@@ -414,8 +414,8 @@ class GhostRules:
         vector = Actions.directionToVector(action, speed)
         ghostState.configuration = ghostState.configuration.generateSuccessor(
             vector)
-    applyAction = staticmethod(applyAction)
 
+    @staticmethod
     def checkDeath(state, agentIndex):
         pacmanPosition = state.getPacmanPosition()
         if agentIndex == 0:  # Pacman just moved; Anyone can kill him
@@ -429,21 +429,19 @@ class GhostRules:
             ghostPosition = ghostState.configuration.getPosition()
             if GhostRules.canKill(pacmanPosition, ghostPosition):
                 GhostRules.collide(state, ghostState, agentIndex)
-    checkDeath = staticmethod(checkDeath)
 
+    @staticmethod
     def collide(state, ghostState, agentIndex):
         if not state.data._win:
-            state.data.scoreChange -= 500
             state.data._lose = True
-    collide = staticmethod(collide)
 
+    @staticmethod
     def canKill(pacmanPosition, ghostPosition):
         return manhattanDistance(ghostPosition, pacmanPosition) <= COLLISION_TOLERANCE
-    canKill = staticmethod(canKill)
 
+    @staticmethod
     def placeGhost(state, ghostState):
         ghostState.configuration = ghostState.start
-    placeGhost = staticmethod(placeGhost)
 
 #############################
 # FRAMEWORK TO START A GAME #
@@ -496,13 +494,11 @@ def readCommand(argv):
                       metavar='TYPE', default='RandomGhost')
     parser.add_option('-f', '--fixRandomSeed', action='store_true', dest='fixRandomSeed',
                       help='Fixes the random seed to always play the same game', default=False)
-    # TODO : Clean unused parameter options
     parser.add_option('-n', '--numGames', dest='numGames', type='int',
                       help=default('the number of GAMES to play'), metavar='GAMES', default=6000)
-    parser.add_option('-t', '--textGraphics', action='store_true', dest='textGraphics',
-                      help='Display output as text only', default=False)
     parser.add_option('-q', '--quietTextGraphics', action='store_true', dest='quietGraphics',
                       help='Generate minimal output and no graphics', default=False)
+    # TODO : Clean unused parameter options
     parser.add_option('-z', '--zoom', type='float', dest='zoom',
                       help=default('Zoom the size of the graphics window'), default=1.0)
     parser.add_option('-r', '--recordActions', action='store_true', dest='record',
@@ -519,6 +515,8 @@ def readCommand(argv):
                       help='Turns on exception handling and timeouts during games', default=False)
     parser.add_option('--timeout', dest='timeout', type='int',
                       help=default('Maximum length of time an agent can spend computing in a single game'), default=30)
+    parser.add_option('-t', '--textGraphics', action='store_true', dest='textGraphics',
+                      help='Display output as text only', default=False)
 
     options, otherjunk = parser.parse_args(argv)
     if len(otherjunk) != 0:
