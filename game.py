@@ -411,6 +411,7 @@ class GameStateData:
             self.layout = prevState.layout
             self._eaten = prevState._eaten
             self.score = prevState.score
+            self.foodLevel = prevState.foodLevel
 
         self._foodEaten = None
         self._foodAdded = None
@@ -418,6 +419,7 @@ class GameStateData:
         self._lose = False
         self._win = False
         self.scoreChange = 0
+        self.foodLevelChange = 0
 
     def deepCopy(self):
         state = GameStateData(self)
@@ -447,6 +449,8 @@ class GameStateData:
             return False
         if not self.score == other.score:
             return False
+        if not self.foodLevel == other.foodLevel:
+            return False
         return True
 
     def __hash__(self):
@@ -459,7 +463,8 @@ class GameStateData:
             except TypeError(e):
                 print(e)
                 # hash(state)
-        return int((hash(tuple(self.agentStates)) + 13 * hash(self.food)  + 7 * hash(self.score)) % 1048575)
+        # TODO : Check for type of other
+        return int((hash(tuple(self.agentStates)) + 13 * hash(self.food)  + 7 * hash(self.score) + 15 * hash(self.foodLevel)) % 1048575)
 
     def __str__(self):
         width, height = self.layout.width, self.layout.height
@@ -504,13 +509,6 @@ class GameStateData:
 
     def _ghostStr(self, dir):
         return 'G'
-        if dir == Directions.NORTH:
-            return 'M'
-        if dir == Directions.SOUTH:
-            return 'W'
-        if dir == Directions.WEST:
-            return '3'
-        return 'E'
 
     def initialize(self, layout, numGhostAgents):
         """
@@ -520,6 +518,8 @@ class GameStateData:
         self.layout = layout
         self.score = 0
         self.scoreChange = 0
+        self.foodLevel = 30
+        self.foodLevelChange = 0
 
         self.agentStates = []
         numGhosts = 0
