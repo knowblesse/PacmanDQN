@@ -58,6 +58,7 @@ import ghostAgents
 # YOUR INTERFACE TO THE PACMAN WORLD: A GameState #
 ###################################################
 
+TIME_PENALTY = 0.2
 
 class GameState:
     """
@@ -120,14 +121,17 @@ class GameState:
 
         # Time passes
         if agentIndex == 0:
-            state.data.scoreChange += -TIME_PENALTY  # Penalty for waiting around
+            state.data.score += 1
+            state.data.foodLevel += -TIME_PENALTY
+            if state.data.foodLevel <=0:
+                state.data._lose = True
+                #starvation
 
         # Resolve multi-agent effects
         GhostRules.checkDeath(state, agentIndex)
 
         # Book keeping
         state.data._agentMoved = agentIndex
-        state.data.score += state.data.scoreChange
         GameState.explored.add(self)
         GameState.explored.add(state)
         return state
@@ -261,7 +265,6 @@ class GameState:
 # ClassicGameRules, PacmanRules, GhostRules
 
 COLLISION_TOLERANCE = 0.7  # How close ghosts must be to Pacman to kill
-TIME_PENALTY = 1  # Number of points lost each round
 
 class ClassicGameRules:
     """
@@ -370,14 +373,14 @@ class PacmanRules:
         x, y = position
         # Eat food
         if state.data.food[x][y]:
-            state.data.scoreChange += 10
             state.data.food = state.data.food.copy()
             state.data.food[x][y] = False
             state.data._foodEaten = position
+            state.data.foodLevel += 50
             # TODO: cache numFood?
             numFood = state.getNumFood()
             if numFood == 0 and not state.data._lose:
-                state.data.scoreChange += 500
+                state.data.score += int(state.data.foodLevel/TIME_PENALTY)
                 state.data._win = True
 
 class GhostRules:
