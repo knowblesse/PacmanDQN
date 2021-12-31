@@ -33,6 +33,8 @@ INFO_PANE_COLOR = formatColor(.4, .4, 0)
 SCORE_COLOR = formatColor(.9, .9, .9)
 PACMAN_OUTLINE_WIDTH = 2
 PACMAN_CAPTURE_OUTLINE_WIDTH = 4
+# TODO : alpha value for the OVERLAY
+OVERLAY_COLOR = formatColor(0, 0, 0)
 
 GHOST_COLORS = []
 GHOST_COLORS.append(formatColor(.9, 0, 0))  # Red
@@ -184,6 +186,7 @@ class PacmanGraphics:
         self.distributionImages = None  # Initialized lazily
         self.drawStaticObjects(state)
         self.drawAgentObjects(state)
+        self.drawOverlayObjects(state)
 
         # Information
         self.previousState = state
@@ -229,6 +232,11 @@ class PacmanGraphics:
                 self.agentImages.append((agent, image))
         refresh()
 
+    def drawOverlayObjects(self, state):
+        # TODO : draw four rectangles
+        polygon([[200,200],[200,400],[400,400],[400,200]], None, formatColor(1,1,1), smoothed=0)
+        refresh()
+
     def swapImages(self, agentIndex, newState):
         """
           Changes an image from a ghost to a pacman or vis versa (for capture)
@@ -247,6 +255,7 @@ class PacmanGraphics:
     def update(self, newState):
         agentIndex = newState._agentMoved
         agentState = newState.agentStates[agentIndex]
+        # This function runs periodically. Overlay update must be done in here or elsewhere
 
         if self.agentImages[agentIndex][0].isPacman != agentState.isPacman:
             self.swapImages(agentIndex, agentState)
