@@ -216,6 +216,7 @@ def manhattanDistance(xy1, xy2):
     "Returns the Manhattan distance between points xy1 and xy2"
     return abs(xy1[0] - xy2[0]) + abs(xy1[1] - xy2[1])
 
+
 def getState(state, state_size):
     """
     parse state array from GameState object
@@ -250,6 +251,9 @@ def getState(state, state_size):
                     # outside of the layout
                     continue
                 else:
+                    if manhattanDistance((grid_x, grid_y), pacmanPosition) > int((state_size-1)/2):
+                        # too far
+                        continue
                     if isVisible((grid_x,grid_y), pacmanPosition, state.data.layout.walls):
                         if state.data.layout.walls[grid_x][grid_y]:
                             # check wall
