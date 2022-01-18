@@ -16,6 +16,7 @@ from graphicsUtils import *
 import math
 import time
 from game import Directions
+import util
 
 ###########################
 #  GRAPHICS DISPLAY CODE  #
@@ -29,12 +30,11 @@ DEFAULT_GRID_SIZE = 30.0
 INFO_PANE_HEIGHT = 35
 BACKGROUND_COLOR = formatColor(0, 0, 0)
 WALL_COLOR = formatColor(0.0 / 255.0, 51.0 / 255.0, 255.0 / 255.0)
+OVERLAY_COLOR = formatColor(0.2, 0.2, 0.2)
 INFO_PANE_COLOR = formatColor(.4, .4, 0)
 SCORE_COLOR = formatColor(.9, .9, .9)
 PACMAN_OUTLINE_WIDTH = 2
 PACMAN_CAPTURE_OUTLINE_WIDTH = 4
-# TODO : alpha value for the OVERLAY
-OVERLAY_COLOR = formatColor(0, 0, 0)
 
 GHOST_COLORS = []
 GHOST_COLORS.append(formatColor(.9, 0, 0))  # Red
@@ -95,6 +95,7 @@ class InfoPane:
         self.textColor = PACMAN_COLOR
         self.drawPane()
 
+
     def toScreen(self, pos, y=None):
         """
           Translates a point relative from the bottom left of the info pane.
@@ -129,12 +130,6 @@ class InfoPane:
     def updateScore(self, score):
         changeText(self.scoreText, "SCORE: % 4d" % score)
 
-    def setTeam(self, isBlue):
-        text = "RED TEAM"
-        if isBlue:
-            text = "BLUE TEAM"
-        self.teamText = text(self.toScreen(
-            300, 0), self.textColor, text, "Times", self.fontSize, "bold")
 
     def updateGhostDistances(self, distances):
         if len(distances) == 0:
@@ -166,7 +161,16 @@ class InfoPane:
 
 class PacmanGraphics:
 
-    def __init__(self, zoom=1.0, frameTime=0.0, capture=False):
+    def __init__(self, zoom=1.0, frameTime=0.0, visualRange=3, capture=False, debug=False):
+        """
+        Initialize
+        :param zoom:
+        :param frameTime: float : delay time
+        :param visualRange: int : manhattan distance of the visual range
+        :param capture:
+        :param debug: boolean : if true, draws grid lines
+        """
+
         self.have_window = 0
         self.currentGhostImages = {}
         self.pacmanImage = None
@@ -174,6 +178,9 @@ class PacmanGraphics:
         self.gridSize = DEFAULT_GRID_SIZE * zoom
         self.capture = capture
         self.frameTime = frameTime
+        self.debug = debug
+        self.gridline = 0
+        self.visualRange = visualRange
 
     def checkNullDisplay(self):
         return False
@@ -190,6 +197,10 @@ class PacmanGraphics:
 
         # Information
         self.previousState = state
+
+        # Debug option
+        if self.debug:
+            self.gridline = 1
 
     def startGraphics(self, state):
         self.layout = state.layout
@@ -233,8 +244,15 @@ class PacmanGraphics:
         refresh()
 
     def drawOverlayObjects(self, state):
-        # TODO : draw four rectangles
-        polygon([[200,200],[200,400],[400,400],[400,200]], None, formatColor(1,1,1), smoothed=0)
+        self.overlayImages = [[0 for _ in range(self.height)] for _ in range(self.width)]
+        for x in range(0, state.layout.width):
+            for y in range(0, state.layout.height):
+                screen_position = self.to_screen((x,y))
+                self.overlayImages[x][y] = polygon([
+                    [screen_position[0]-self.gridSize/2+self.gridline,screen_position[1]-self.gridSize/2+self.gridline],
+                    [screen_position[0]-self.gridSize/2+self.gridline,screen_position[1]+self.gridSize/2-self.gridline],
+                    [screen_position[0]+self.gridSize/2-self.gridline,screen_position[1]+self.gridSize/2-self.gridline],
+                    [screen_position[0]+self.gridSize/2-self.gridline,screen_position[1]-self.gridSize/2+self.gridline]], None, OVERLAY_COLOR, smoothed=0)
         refresh()
 
     def swapImages(self, agentIndex, newState):
@@ -262,6 +280,7 @@ class PacmanGraphics:
         prevState, prevImage = self.agentImages[agentIndex]
         if agentState.isPacman:
             self.animatePacman(agentState, prevState, prevImage)
+            self.updateOverlay(newState, agentState)
         else:
             self.moveGhost(agentState, agentIndex, prevState, prevImage)
         self.agentImages[agentIndex] = (agentState, prevImage)
@@ -272,6 +291,21 @@ class PacmanGraphics:
         self.infoPane.updateScore(newState.score)
         if 'ghostDistances' in dir(newState):
             self.infoPane.updateGhostDistances(newState.ghostDistances)
+
+    def updateOverlay(self, newState, agentState):
+        pacmanPosition = newState.agentStates[0].getPosition()
+        walls = newState.layout.walls
+        for x in range(pacmanPosition[0]-(self.visualRange+1), pacmanPosition[0]+(self.visualRange+1)+1):
+            if x < 0 or x>=self.width:
+                continue
+            for y in range(pacmanPosition[1]-(self.visualRange+1), pacmanPosition[1]+(self.visualRange+1)+1):
+                if y < 0 or y >= self.height:
+                    continue
+                if util.manhattanDistance(pacmanPosition, (x, y)) <= self.visualRange and util.isVisible(pacmanPosition, (x, y),walls):
+                    edit(self.overlayImages[x][y], ('fill', ''))
+                else:
+                    edit(self.overlayImages[x][y], ('fill', OVERLAY_COLOR))
+        refresh()
 
     def make_window(self, width, height):
         grid_width = (width - 1) * self.gridSize
