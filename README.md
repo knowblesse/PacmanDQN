@@ -14,6 +14,29 @@ Run following command on kernel with default parameters below
 $ python3 pacman.py
 ```
 
+## Parameters
+* *-l* : layout (file name of the layout)
+```shell script
+$ python3 pacman.py -l AI
+```
+* *-p* : pacman agent name (class name in the pacmanAgents.py)
+```shell script
+$ python3 pacman.py -p KeyboardAgent
+```
+* *-g* : ghost agent name (class name in the ghostAgents.py)
+```shell script
+$ python3 pacman.py -g RandomAgent
+```
+* *-q* : run without graphical output (beware not to use the KeyboardAgent for Pacman)
+```shell script
+$ python3 pacman.py -q
+```
+* *--frameTime* : time delay for graphical output. if the graphical simulation is too slow or fast, try to adjust this value. (default =0.05)
+ ```shell script
+$ python3 pacman.py --frameTime 0.1
+```
+
+
 ## Environment Structure
 
 ### Game

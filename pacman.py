@@ -58,7 +58,9 @@ import ghostAgents
 # YOUR INTERFACE TO THE PACMAN WORLD: A GameState #
 ###################################################
 
-TIME_PENALTY = 0.2
+FOOD_DISCOUNT = 0.5
+FOOD_INCREASE = 20
+COLLISION_TOLERANCE = 0.7  # How close ghosts must be to Pacman to kill
 
 class GameState:
     """
@@ -122,7 +124,7 @@ class GameState:
         # Time passes
         if agentIndex == 0:
             state.data.score += 1
-            state.data.foodLevel += -TIME_PENALTY
+            state.data.foodLevel -= FOOD_DISCOUNT
             if state.data.foodLevel <=0:
                 state.data._lose = True
                 #starvation
@@ -264,8 +266,6 @@ class GameState:
 ############################################################################
 # ClassicGameRules, PacmanRules, GhostRules
 
-COLLISION_TOLERANCE = 0.7  # How close ghosts must be to Pacman to kill
-
 class ClassicGameRules:
     """
     These game rules manage the control flow of a game, deciding when
@@ -376,11 +376,10 @@ class PacmanRules:
             state.data.food = state.data.food.copy()
             state.data.food[x][y] = False
             state.data._foodEaten = position
-            state.data.foodLevel += 50
-            # TODO: cache numFood?
+            state.data.foodLevel += FOOD_INCREASE
             numFood = state.getNumFood()
             if numFood == 0 and not state.data._lose:
-                state.data.score += int(state.data.foodLevel/TIME_PENALTY)
+                state.data.score += int(state.data.foodLevel/FOOD_DISCOUNT)
                 state.data._win = True
 
 class GhostRules:
@@ -501,6 +500,8 @@ def readCommand(argv):
                       help=default('the number of GAMES to play'), metavar='GAMES', default=6000)
     parser.add_option('-q', '--quietTextGraphics', action='store_true', dest='quietGraphics',
                       help='Generate minimal output and no graphics', default=False)
+    parser.add_option('--frameTime', dest='frameTime', type='float',
+                      help=default('Time to delay between frames; <0 means keyboard'), default=0.05)
     # TODO : Clean unused parameter options
     parser.add_option('-z', '--zoom', type='float', dest='zoom',
                       help=default('Zoom the size of the graphics window'), default=1.0)
@@ -512,8 +513,6 @@ def readCommand(argv):
                       help='Comma separated values sent to agent. e.g. "opt1=val1,opt2,opt3=val3"')
     parser.add_option('-x', '--numTraining', dest='numTraining', type='int',
                       help=default('How many episodes are training (suppresses output)'), default=0)
-    parser.add_option('--frameTime', dest='frameTime', type='float',
-                      help=default('Time to delay between frames; <0 means keyboard'), default=0.1)
     parser.add_option('-c', '--catchExceptions', action='store_true', dest='catchExceptions',
                       help='Turns on exception handling and timeouts during games', default=False)
     parser.add_option('--timeout', dest='timeout', type='int',
