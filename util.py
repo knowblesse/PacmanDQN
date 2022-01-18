@@ -216,6 +216,60 @@ def manhattanDistance(xy1, xy2):
     "Returns the Manhattan distance between points xy1 and xy2"
     return abs(xy1[0] - xy2[0]) + abs(xy1[1] - xy2[1])
 
+def getState(state, state_size):
+    """
+    parse state array from GameState object
+    :param state : GameState : current GameState object
+    :param state_size : int(odd) : size of the state array. This also determine the visual range of the Pacman
+        This value must be an positive odd integer, because the Pacman is located at the center of the array
+    :return : nested array (2D) :
+        0 : unknown
+        1 : wall
+        2 : ghost
+        3 : food
+        4 : empty
+    """
+    if state_size % 2 != 1:
+        raise(BaseException('range value must be an odd value'))
+    stateArray = [[0 for _ in range(state_size)] for _ in range(state_size)]
+    pacmanPosition = state.data.agentStates[0].getPosition()
+
+    #grid_x, grid_y : actual cooordinate from the grid
+    #x, y : coordinate inside the state array
+    for x in range(state_size):
+        grid_x = pacmanPosition[0] + int(x - (state_size-1)/2)
+        if (grid_x < 0) or (grid_x >= state.data.layout.width):
+            # outside of the layout
+            continue
+        else:
+            for y in range(state_size):
+                grid_y = pacmanPosition[1] + int(y - (state_size-1)/2)
+                if (grid_x, grid_y) == pacmanPosition:
+                    continue
+                if (grid_y < 0) or (grid_y >= state.data.layout.height):
+                    # outside of the layout
+                    continue
+                else:
+                    if isVisible((grid_x,grid_y), pacmanPosition, state.data.layout.walls):
+                        if state.data.layout.walls[grid_x][grid_y]:
+                            # check wall
+                            stateArray[x][y] = 1
+                        else:
+                            for ghost in range(1,len(state.data.agentStates)):
+                                # check ghost (agent 0 is Pacman. Start from index 1)
+                                ghostPosition = state.data.agentStates[ghost].getPosition()
+                                if (ghostPosition == (grid_x,grid_y)):
+                                    stateArray[x][y] = 2
+                                    break
+                            if stateArray[x][y] != 2:
+                                if state.data.food[grid_x][grid_y]:
+                                    # check food
+                                    stateArray[x][y] = 3
+                                else:
+                                    # then empty
+                                    stateArray[x][y] = 4
+    return stateArray
+
 def isVisible(p1, p2, wall):
     "Check whether two points (p1 and p2) is not blocked by walls"
     p1 = [int(p1[0]), int(p1[1])]
@@ -223,11 +277,11 @@ def isVisible(p1, p2, wall):
 
     if (p1[0] == p2[0]) or (p1[1] == p2[1]): # check whether two agents are aligned
         if p1[0] == p2[0]:
-            for j in range(min(p1[1], p2[1]), max(p1[1], p2[1])):
+            for j in range(min(p1[1], p2[1])+1, max(p1[1], p2[1])):
                 if wall[p1[0]][j] == True:
                     return False
         elif(p1[1] == p2[1]):
-            for k in range(min(p1[0], p2[0]), max(p1[0], p2[0])):
+            for k in range(min(p1[0], p2[0])+1, max(p1[0], p2[0])):
                 if wall[k][p1[1]] == True:
                     return False
         return True
