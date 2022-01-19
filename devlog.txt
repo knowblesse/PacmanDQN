@@ -3,3 +3,11 @@ score
 - time limit (by starvation)
     -> punish prolonged stay
 - survival time is score
+
+# 22JAN19
+partially observable feature added
+- util.getState function
+- graphical interface
+
+new pacman agent added
+- simple reflex based agent. run away from ghosts, and run towards to foods.

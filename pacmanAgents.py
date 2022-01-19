@@ -16,6 +16,7 @@ from game import Agent
 from game import Directions
 import util
 import random
+import numpy as np
 
 class RandomAgent(Agent):
     """
@@ -96,3 +97,75 @@ class KeyboardAgent(Agent):
         if (self.SOUTH_KEY in self.keys or 'Down' in self.keys) and Directions.SOUTH in legal:
             move = Directions.SOUTH
         return move
+
+class ReflexAgent(Agent):
+    """
+    Run away from ghosts, run towards to foods
+    """
+    def __init__(self, index=0):
+        self.index = index
+
+    def initialize(self):
+        pass
+
+    def getAction(self, state):
+        possibleActions = state.getLegalActions(self.index)
+
+        if len(possibleActions) == 1:
+            return possibleActions
+
+        state_size = 7
+        visual_range = int((state_size - 1) / 2)
+        visualField = np.array(util.getState(state, state_size))
+
+        if np.any(visualField == 2): # ghost detected
+            if np.any(visualField[0:visual_range-1,:] == 2): # ghost at left
+                if 'East' in possibleActions:
+                    return Directions.EAST
+                else:
+                    if 'West' in possibleActions:
+                        possibleActions.remove('West')
+                    return np.random.choice(possibleActions)
+            if np.any(visualField[visual_range+1:,:] == 2): # ghost at right
+                if 'West' in possibleActions:
+                    return Directions.WEST
+                else:
+                    if 'East' in possibleActions:
+                        possibleActions.remove('East')
+                    return np.random.choice(possibleActions)
+            if np.any(visualField[:,0:visual_range-1] == 2): # ghost at bottom
+                if 'North' in possibleActions:
+                    return Directions.NORTH
+                else:
+                    if 'South' in possibleActions:
+                        possibleActions.remove('South')
+                    return np.random.choice(possibleActions)
+            if np.any(visualField[:,visual_range+1:] == 2): # ghost at top
+                if 'South' in possibleActions:
+                    return Directions.SOUTH
+                else:
+                    if 'North' in possibleActions:
+                        possibleActions.remove('North')
+                    return np.random.choice(possibleActions)
+        else:
+            if np.any(visualField == 3):  # food detected
+                if np.any(visualField[0:visual_range-1, :] == 3):
+                    if 'West' in possibleActions:
+                        return Directions.WEST
+                if np.any(visualField[visual_range+1:, :] == 3):
+                    if 'East' in possibleActions:
+                        return Directions.EAST
+                if np.any(visualField[:, 0:visual_range] == 3):
+                    if 'South' in possibleActions:
+                        return Directions.SOUTH
+                if np.any(visualField[:, visual_range:] == 3):
+                    if 'North' in possibleActions:
+                        return Directions.NORTH
+            else: # go random
+                if (state.getPacmanState().getDirection() is not 'Stop') and (state.getPacmanState().getDirection() in possibleActions):
+                    if np.random.rand() < 0.7:
+                        return state.getPacmanState().getDirection()
+                    else:
+                        return np.random.choice(possibleActions)
+        possibleActions.remove('Stop')
+        return np.random.choice(possibleActions)
