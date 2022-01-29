@@ -16,7 +16,7 @@ import sys
 import inspect
 import heapq
 import random
-import io
+import numpy as np
 
 
 class FixedRandom:
@@ -217,7 +217,7 @@ def manhattanDistance(xy1, xy2):
     return abs(xy1[0] - xy2[0]) + abs(xy1[1] - xy2[1])
 
 
-def getState(state, state_size):
+def getState(state, state_size, as_numpy_arr = False):
     """
     parse state array from GameState object
     :param state : GameState : current GameState object
@@ -272,7 +272,10 @@ def getState(state, state_size):
                                 else:
                                     # then empty
                                     stateArray[x][y] = 4
-    return stateArray
+    if as_numpy_arr:
+        return np.array(stateArray)
+    else:
+        return stateArray
 
 def isVisible(p1, p2, wall):
     "Check whether two points (p1 and p2) is not blocked by walls"

@@ -181,6 +181,9 @@ class GameState:
     def getScore(self):
         return float(self.data.score)
 
+    def getFoodLevel(self):
+        return float(self.data.foodLevel)
+
     def getNumFood(self):
         return self.data.food.count()
      

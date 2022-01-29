@@ -1,8 +1,12 @@
-# 21DEC30
-score
-- time limit (by starvation)
-    -> punish prolonged stay
-- survival time is score
+# 22JAN28
+- pacman function structure :
+    - execute runGames once <load model and initialize : Agent.__init__>
+        - execute game.run() multiple times(numGames)
+            - initialize the agent by calling registerInitialState < goto start state >
+            - until game over
+                - call observationFunction
+                - call getAction
+            - call final <save model for checkpoint>
 
 # 22JAN19
 partially observable feature added
@@ -11,3 +15,10 @@ partially observable feature added
 
 new pacman agent added
 - simple reflex based agent. run away from ghosts, and run towards to foods.
+
+# 21DEC30
+score
+- time limit (by starvation)
+    -> punish prolonged stay
+- survival time is score
+
