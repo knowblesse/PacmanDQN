@@ -1,68 +1,103 @@
 import numpy as np
 import game
-from collections import deque
+from collections import deque, namedtuple
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import util
+import random
+
+SAV = namedtuple('SAV', ('state', 'action', 'vaule'))
+
+class ReplayMemory(object):
+    def __init__(self, capacity):
+        self.memory = deque([], maxlen=capacity)
+    def push(self, *args):
+        self.memory.append(SAV(*args))
+    def sample(self, sample_size):
+        return random.sample(self.memory, sample_size)
+    def __len__(self):
+        return len(self.memory)
 
 class PacmanSimpleDQN(game.Agent):
     def __init__(self):
-        print("Initialize Pacman Agent (Simple DQN)")
-        args = dict()
+        print("Initializing the Pacman Agent (Simple DQN)")
+
+        # check GPU availability
+        self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        # Parameters
         self.memory_size = 10#args.memory_size # default : 10 # number of previous state as input
-        self.state_size = 7#args.state_size # default : 7 (7x7 matrix)
-        args['memory_size'] = self.memory_size
-        args['state_size'] = self.state_size
-        self.Qfunction = SimpleDQN(args)
-        self.LTM = []
-        self.WM_state_arr = [] # working memory
-        self.WM_food_level = []
-        self.WM_action = []
-        self.WM_reward = []
-        self.SM_state_arr = [] # state arrays fed to the Q value function
         self.train_size = 50#args.train_size # default : 50
         self.gamma = 0.95 # for reward discounting
+        self.state_size = 7#args.state_size # default : 7 (7x7 matrix)
+        args = dict()
+        args['memory_size'] = self.memory_size
+        args['state_size'] = self.state_size
+        args['device'] = self.device
+        
+        # Brain
+        self.Qfunction = SimpleDQN(args).to(self.device)
+        self.optimizer = torch.optim.Adagrad(self.Qfunction.parameters())
+
+        # Memory
+        self.LTM = ReplayMemory(5000) # replay memory for learning
+        self.bestScore = 0
+
+        # Working Memory # after each episode, save it into the LTM
+        self.WM = {'state': [], 'action':[], 'reward':[]}
+
+        # Short-term Memory
+        self.SM_state_arr = [] # state arrays fed to the Q value function
+
         self.firstStep = True
         self.last_state = None
         self.last_action = None
 
     def initialize(self):
-        print('Initialize')
+        # erase memory except the LTM
         self.SM_state_arr = []
+        self.WM = {'state': [], 'action':[], 'reward':[]}
+        self.firstStep = True
+        self.last_state = None
+        self.last_action = None
 
     def registerInitialState(self, state):
         # run once at the first state 
+        self.initialize()
         self.firstStep = True
-        self.last_state = state
-        state_array = util.getState(state, self.state_size, True)
+        state_array = util.getState(state, self.state_size)
         self.SM_state_arr.append(state_array)
 
     def observationFunction(self, state):
         # observe the current state and remember 1) the past state, 2) the past action, 3) current state, and 4) reward
-
         if self.firstStep:
             self.firstStep = False
         else:
-            state_array = util.getState(state, self.state_size, True)
+            state_array = util.getState(state, self.state_size)
+            state_array_np = np.array(state_array)
             if (state.getFoodLevel() - self.last_state.getFoodLevel()) > 0 :
                 # food eaten
-                reward = 30
-            elif np.any(state_array == 2):
+                reward = 50
+                print('food eaten')
+            elif np.any(state_array_np == 2):
                 # ghost in sight
                 reward = -5
-            elif np.any(state_array == 3):
+            elif np.any(state_array_np == 3):
                 # food in sight
-                reward = 5
+                points = np.where(state_array_np == 3)
+                nearFoodScore = 0
+                for x,y in zip(*points):
+                    nfs = abs((self.state_size-1)/2 - x) + abs((self.state_size-1)/2 - y)
+                    if nfs > nearFoodScore:
+                        nearFoodScore = nfs
+                reward = nearFoodScore
             else:
                 reward = -1
-            reward += state.getFoodLevel()/10
 
             # Register to Working Memory for training
-            self.WM_state_arr.append(util.getState(self.last_state, self.state_size,True))
-            self.WM_food_level.append(self.last_state.getFoodLevel())
-            self.WM_action.append(self.last_action)
-            self.WM_reward.append(reward)
+            self.WM['state'].append(util.getState(self.last_state, self.state_size))
+            self.WM['action'].append(self.last_action)
+            self.WM['reward'].append(reward)
 
             # Register to Short-term Memory for action selection
             if len(self.SM_state_arr)==self.memory_size:
@@ -77,12 +112,13 @@ class PacmanSimpleDQN(game.Agent):
         if len(s) < self.memory_size:
             for _ in range(self.memory_size - len(s)):
                 s.insert(0,self.SM_state_arr[0])
-        values = self.Qfunction.forward(np.array(s).flatten()).detach().numpy()
+        values = self.Qfunction.forward(torch.tensor(s, dtype=torch.float32)).detach().to("cpu").numpy()
 
         # softmax function for choosing the next action
         dist = util.Counter()
         for a in state.getLegalActions(0):
             dist[a] = np.exp(values[self.__textAction2indexAction(a)])
+
         dist.normalize()
         action = util.chooseFromDistribution(dist) 
         self.last_action = action
@@ -104,27 +140,41 @@ class PacmanSimpleDQN(game.Agent):
 
     def final(self, state):
         if state.isWin():
-            reward = 100
+            reward = 500
         else:
             reward = -100
 
-        self.WM_state_arr.append(util.getState(self.last_state, self.state_size,True))
-        self.WM_food_level.append(self.last_state.getFoodLevel())
-        self.WM_action.append(self.last_action)
-        self.WM_reward.append(reward)
+        self.WM['state'].append(util.getState(self.last_state, self.state_size))
+        self.WM['action'].append(self.last_action)
+        self.WM['reward'].append(reward)
 
         # generate learning data from the whole episode
-        for i in range(self.memory_size-1,len(self.WM_action)):
-            s = np.array(self.WM_state_arr[i-(self.memory_size-1):i+1]).flatten()
-            a = self.__textAction2indexAction(self.WM_action[i])
-            q = np.sum(np.array(self.WM_reward[i:]) * np.array([self.gamma**i for i in range(len(self.WM_action) - i)]))
+        #if state.getScore() >= self.bestScore:
+        if True:
+            for i in range(self.memory_size-1,len(self.WM['action'])):
+                self.LTM.push(
+                    self.WM['state'][i-(self.memory_size-1):i+1],
+                    self.__textAction2indexAction(self.WM['action'][i]),
+                    sum([r*d for r, d in zip(self.WM['reward'][i:],[self.gamma**i for i in range(len(self.WM['action']) - i)])]))
+            self.bestScore = state.getScore()
+            print("saved")
 
-        # TODO : register learning data to the LTM
+        if len(self.LTM) > 100:
+            self.train()
+            print("trained")
 
     def train(self):
         # generate train batch (from replay memory)
-        dataset = np.random.choice(self.replay_mem, self.train_size, False)
-        
+        sample = self.LTM.sample(self.train_size)
+        sample = SAV(*zip(*sample))
+
+        X = torch.tensor(sample.state, dtype=torch.float32)
+
+        loss_fn = nn.SmoothL1Loss()
+        loss = loss_fn(self.Qfunction.forward(X).gather(1,torch.tensor(sample.action,device=self.device)), torch.tensor(sample.vaule, device=self.device))
+        self.optimizer.zero_grad()
+        loss.backward()
+        self.optimizer.step()
 
 class SimpleDQN(nn.Module):
     def __init__(self, params):
@@ -134,6 +184,7 @@ class SimpleDQN(nn.Module):
         # save params
         self.memory_size = params['memory_size']
         self.state_size = params['state_size']
+        self.device = params['device']
 
         # basic building blocks
         self.fc1 = nn.Linear(
@@ -151,10 +202,18 @@ class SimpleDQN(nn.Module):
         self.fc5 = nn.Linear(
                 self.memory_size,
                 5) # five actions
+        self.bn = nn.BatchNorm1d(self.state_size**2*self.memory_size)
         self.dropout = nn.Dropout(0.25)
 
+
+
     def forward(self, x):
-        x = torch.from_numpy(x).type(torch.float32)
+        x = x.to(self.device)
+        if x.dim() == 4:
+            x = self.bn(x.flatten(1))
+        else:
+            x = x.flatten()
+
         x = self.fc1(x)
         x = F.relu(x)
 
@@ -167,8 +226,6 @@ class SimpleDQN(nn.Module):
 
         x = self.fc3(x)
         x = F.relu(x)
-
-        x = self.dropout(x)
         
         x = self.fc4(x)
         x = F.relu(x)
@@ -176,4 +233,4 @@ class SimpleDQN(nn.Module):
         x = self.fc5(x)
 
         return x
-        
+
