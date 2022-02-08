@@ -6,6 +6,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 import util
 import random
+import datetime
 
 SAV = namedtuple('SAV', ('state', 'action', 'vaule'))
 
@@ -22,13 +23,13 @@ class ReplayMemory(object):
 class PacmanSimpleDQN(game.Agent):
     def __init__(self):
         print("Initializing the Pacman Agent (Simple DQN)")
-
+        self.model_name = datetime.datetime.now().strftime('Model_%H:%M:%S.md')
         # check GPU availability
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         # Parameters
         self.memory_size = 10#args.memory_size # default : 10 # number of previous state as input
-        self.train_size = 50#args.train_size # default : 50
-        self.gamma = 0.95 # for reward discounting
+        self.train_size = 100#args.train_size # default : 50
+        self.gamma = 0.99 # for reward discounting
         self.state_size = 7#args.state_size # default : 7 (7x7 matrix)
         args = dict()
         args['memory_size'] = self.memory_size
@@ -37,7 +38,9 @@ class PacmanSimpleDQN(game.Agent):
         
         # Brain
         self.Qfunction = SimpleDQN(args).to(self.device)
-        self.optimizer = torch.optim.Adagrad(self.Qfunction.parameters())
+        self.optimizer = torch.optim.Adagrad(self.Qfunction.parameters(),lr=0.005)
+        self.score = deque([],maxlen=100)
+        self.numTrain = 0
 
         # Memory
         self.LTM = ReplayMemory(5000) # replay memory for learning
@@ -77,7 +80,7 @@ class PacmanSimpleDQN(game.Agent):
             state_array_np = np.array(state_array)
             if (state.getFoodLevel() - self.last_state.getFoodLevel()) > 0 :
                 # food eaten
-                reward = 50
+                reward = 50 * self.last_state.getFoodLevel() / 10
                 print('food eaten')
             elif np.any(state_array_np == 2):
                 # ghost in sight
@@ -115,12 +118,24 @@ class PacmanSimpleDQN(game.Agent):
         values = self.Qfunction.forward(torch.tensor(s, dtype=torch.float32)).detach().to("cpu").numpy()
 
         # softmax function for choosing the next action
-        dist = util.Counter()
-        for a in state.getLegalActions(0):
-            dist[a] = np.exp(values[self.__textAction2indexAction(a)])
+        dist = dict()
+        if np.random.rand()<0.05:
+            for a in state.getLegalActions(0):
+                dist[a] = 1
+        else:
+            for a in state.getLegalActions(0):
+                dist[a] = np.exp(values[self.__textAction2indexAction(a)])
 
-        dist.normalize()
-        action = util.chooseFromDistribution(dist) 
+        total = 0
+        for i in dist:
+            total += dist[i]
+        choice = np.random.rand() * total
+        cumval = 0
+        for i in dist:
+            cumval += dist[i]
+            if choice < cumval:
+                break
+        action = i
         self.last_action = action
         return action
 
@@ -140,28 +155,32 @@ class PacmanSimpleDQN(game.Agent):
 
     def final(self, state):
         if state.isWin():
-            reward = 500
+            reward = 100
         else:
-            reward = -100
+            reward = -30
 
         self.WM['state'].append(util.getState(self.last_state, self.state_size))
         self.WM['action'].append(self.last_action)
         self.WM['reward'].append(reward)
 
         # generate learning data from the whole episode
-        #if state.getScore() >= self.bestScore:
-        if True:
+        if state.getScore() >= np.mean(self.score):
             for i in range(self.memory_size-1,len(self.WM['action'])):
                 self.LTM.push(
                     self.WM['state'][i-(self.memory_size-1):i+1],
                     self.__textAction2indexAction(self.WM['action'][i]),
                     sum([r*d for r, d in zip(self.WM['reward'][i:],[self.gamma**i for i in range(len(self.WM['action']) - i)])]))
             self.bestScore = state.getScore()
-            print("saved")
-
-        if len(self.LTM) > 100:
+            print("memorized")
+        if len(self.LTM) > 2000:
             self.train()
             print("trained")
+        self.score.append(state.getScore())
+        if self.numTrain % 50 == 0:
+            torch.save(self.Qfunction, self.model_name)
+            print("saved")
+        print(f'{self.numTrain} : {np.mean(self.score)}')
+        self.numTrain = self.numTrain + 1
 
     def train(self):
         # generate train batch (from replay memory)
@@ -171,7 +190,7 @@ class PacmanSimpleDQN(game.Agent):
         X = torch.tensor(sample.state, dtype=torch.float32)
 
         loss_fn = nn.SmoothL1Loss()
-        loss = loss_fn(self.Qfunction.forward(X).gather(1,torch.tensor(sample.action,device=self.device)), torch.tensor(sample.vaule, device=self.device))
+        loss = loss_fn(self.Qfunction.forward(X).gather(1,torch.tensor(sample.action,device=self.device).unsqueeze(1)), torch.tensor(sample.vaule, device=self.device).unsqueeze(1))
         self.optimizer.zero_grad()
         loss.backward()
         self.optimizer.step()
@@ -203,7 +222,7 @@ class SimpleDQN(nn.Module):
                 self.memory_size,
                 5) # five actions
         self.bn = nn.BatchNorm1d(self.state_size**2*self.memory_size)
-        self.dropout = nn.Dropout(0.25)
+        self.dropout = nn.Dropout(0.05)
 
 
 
