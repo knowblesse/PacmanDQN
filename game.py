@@ -49,12 +49,6 @@ class Agent:
         """
         raiseNotDefined()
 
-    def initialize(self):
-        """
-        This function is called when a new game starts. The state of the agent (ex. isChase) is initialized.
-        """
-        raiseNotDefined()
-
 
 class Directions:
     NORTH = 'North'
@@ -721,7 +715,7 @@ class Game:
                         self.unmute()
                         return
                     self.unmute()
-                except Exception(data):
+                except Exception():
                     self._agentCrash(agentIndex)
                     self.unmute()
                     return
@@ -735,7 +729,7 @@ class Game:
                 try:
                     self.state = self.state.generateSuccessor(
                         agentIndex, action)
-                except Exception(data):
+                except Exception():
                     self.mute(agentIndex)
                     self._agentCrash(agentIndex)
                     self.unmute()
@@ -766,7 +760,7 @@ class Game:
                     self.mute(agentIndex)
                     agent.final(self.state)
                     self.unmute()
-                except Exception(data):
+                except Exception:
                     if not self.catchExceptions:
                         raise
                     self._agentCrash(agentIndex)

@@ -47,8 +47,47 @@ All rules, valid movements, score information are store in three files.
 * ***pacman.py*** : main function
 * ***utils.py*** : helper functions
 
-DETAIL @SY
+### GameState (pacman.py)
+#### fields
+* explored
+#### methods
+* getAndResetExplored()
+* getLegalActions(agentIndex=0)
+* generateSuccessor(agentIndex, action)
+* getLegalPacmanActions()
+* generatePacmanSuccessor(action)
+* getPacmanState()
+* getPacmanPosition()
+* getGhostStates()
+* getGhostState(agentIndex)
+* getGhostPosition(agentIndex)
+* getGhostPositions()
+* getNumAgents()
+* getScore()
+* getNumFood()
+* getFood()
+* getWalls()
+* hasFood(x,y)
+* hasWall(x,y)
+* isLose()
+* isWin()
 
+### GameStateData (game.py)
+###fields
+* food
+* agentStates
+* layout
+* _eaten
+* score
+* foodLevel
+* _foodEaten
+* _foodAdded
+* _agentMoved
+* _lose
+* _win
+* scoreChange
+* foodLevelChange
+ 
 ### Agents
 
 There are two agent classes in the environment all inherited from the **Agent**(*game.py*) class.
