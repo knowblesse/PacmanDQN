@@ -27,8 +27,8 @@ class PacmanDRQN(game.Agent):
         super().__init__()
         # Basic info for logging
         self.model_name = 'DRQN'
-        self.exp_num = 
-        self.writer = SummaryWriter(f'runs/{self.model_name}/{self.exp_num}')
+        self.exp_num = datetime.datetime.now().strftime('%Y%m%d %H:%M:%S')
+        self.writer = SummaryWriter(f'./runs/{self.model_name}/{self.exp_num}')
 
         self.n_action = 5
         # hyperparameters for training
