@@ -1,3 +1,4 @@
+from asyncio import FastChildWatcher
 import numpy as np
 import game
 from collections import deque, namedtuple
@@ -8,7 +9,8 @@ import util
 import random
 import datetime
 import matplotlib.pyplot as plt
-
+import logging
+from typing import Dict
 from torch.utils.tensorboard import SummaryWriter
 
 
@@ -29,6 +31,9 @@ class PacmanDRQN(game.Agent):
         self.model_name = 'DRQN'
         self.exp_num = datetime.datetime.now().strftime('%Y%m%d %H:%M:%S')
         self.writer = SummaryWriter(f'./runs/{self.model_name}/{self.exp_num}')
+        self.logger = logging.getLogger()
+        self.file_handler = logging.FileHandler(f'./logs/{self.model_name}/{self.exp_num}')
+        self.logger.addHandler(self.file_handler)
 
         self.n_action = 5
         # hyperparameters for training
@@ -41,8 +46,8 @@ class PacmanDRQN(game.Agent):
         self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
         # Q estimation models, loss function, optimizer for the models.
-        self.drqn_pred = DRQN(self.n_action, self.lstm_h_dim, self.lstm_h_dim).to(device)
-        self.drqn_targ = DRQN(self.n_action, self.lstm_h_dim, self.lstm_h_dim).to(device)
+        self.drqn_pred = DRQN(self.n_action, self.lstm_h_dim, self.lstm_h_dim).to(self.device)
+        self.drqn_targ = DRQN(self.n_action, self.lstm_h_dim, self.lstm_h_dim).to(self.device)
         self.drqn_targ.load_state_dict(self.drqn_pred.state_dict())
 
         self.loss_fn = torch.nn.MSELoss()
@@ -63,7 +68,7 @@ class PacmanDRQN(game.Agent):
         self.episode_record = EpisodeBuffer()
         self.memory = ReplayMemory(random_update=self.random_update,
                                    max_epi_num=self.max_epi_num, max_epi_len=self.max_epi_len,
-                                   batch_size=batch_size,
+                                   batch_size=self.batch_size,
                                    lookup_step=self.lookup_step)
 
         # epsiode variables
@@ -107,7 +112,7 @@ class PacmanDRQN(game.Agent):
             elif diff_food > 0:
                 # Ate food
                 self.last_reward = 50.
-            elif any(2 in _ for _ in state_array):
+            elif any(2 in _ for _ in curr_observe):
                 # saw a ghost in sight
                 self.last_reward = -5
             else:
@@ -118,11 +123,15 @@ class PacmanDRQN(game.Agent):
             self.reward_epi += self.last_reward
 
             # Store this experience in episode_record, not replay memory
-            self.episode_record.put([last_observe, ACTION_2_INDEX_MAPPER[self.last_action], r, obs_prime, done_mask])
+            self.episode_record.put([last_observe,
+                                     ACTION_2_INDEX_MAPPER[self.last_action],
+                                     self.last_reward,
+                                     curr_observe, self.terminal])
 
             if len(self.memory) > self.train_size:
                 self.train()
                 self.num_train += 1
+                print('Train')
 
                 if (self.num_train + 1) % self.target_update_period == 0:
                     self.update_target_network()
@@ -150,9 +159,10 @@ class PacmanDRQN(game.Agent):
             torch.save(self.drqn_pred, self.model_name)
 
         score = state.getScore()
-        writer.add_scalar('Episode rewards vs episodes', self.reward_epi, self.num_done_epi)
-        writer.add_scalar('Episode score vs episodes', score, self.num_done_epi)
-        writer.add_scalar('Episode won vs episodes', self.num_won, self.num_done_epi)
+        self.writer.add_scalar('Episode rewards vs episodes', self.reward_epi, self.num_done_epi)
+        self.writer.add_scalar('Episode score vs episodes', score, self.num_done_epi)
+        self.writer.add_scalar('Episode won vs episodes', self.num_won, self.num_done_epi)
+        self.logger.info(f'Episode: {self.num_done_epi}, Score: {score}, Reward: {self.reward_epi}, IsWin: {state.isWin()}, MemoryLen: {len(self.memory)}')
 
         self.num_done_epi += 1
 
@@ -281,10 +291,10 @@ class ReplayMemory:
         self.batch_size = batch_size
         self.lookup_step = lookup_step
 
-        if (random_update is False) and (self.batch_size > 1):
-            sys.exit('It is recommend to use 1 batch for sequential update, if you want, erase this code block and modify code')
+        # if (random_update is False) and (self.batch_size > 1):
+        #     sys.exit('It is recommend to use 1 batch for sequential update, if you want, erase this code block and modify code')
 
-        self.memory = collections.deque(maxlen=self.max_epi_num)
+        self.memory = deque(maxlen=self.max_epi_num)
 
     def put(self, episode):
         self.memory.append(episode)
