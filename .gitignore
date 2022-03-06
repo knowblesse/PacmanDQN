@@ -54,3 +54,8 @@ venv/
 ENV/
 
 .idea/
+
+logs/
+runs/
+
+docker/docker-compose.yml
